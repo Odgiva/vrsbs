@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>VR SBS Launcher</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{color-scheme:dark;--bg:#0b0d12;--fg:#e8ecf4;--mu:#8b93a7;--cd:#161a23;--ac:#5eead4;--ln:#262c3a}
+html,body{height:100%;margin:0;background:#000;color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;cursor:none;user-select:none;-webkit-user-select:none}
+body{display:flex;align-items:center;justify-content:center}
+#stage{display:grid;grid-template-columns:1fr 1fr;aspect-ratio:2712/1220;width:min(100%,calc(100vh*2.2229));width:min(100%,calc(100dvh*2.2229));max-height:100%;position:relative}
+#stage::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:#000;z-index:100;pointer-events:none}
+.eye{min-width:0;position:relative;overflow:hidden;background:var(--bg)}
+.ui{position:absolute;inset:0;font-size:calc(var(--u)*4)}
+.cur{position:absolute;z-index:99;width:calc(var(--u)*3);height:calc(var(--u)*3);margin:calc(var(--u)*-1.5) 0 0 calc(var(--u)*-1.5);border-radius:50%;border:2px solid #fff;background:rgba(94,234,212,.55);box-shadow:0 0 0 1px #000;pointer-events:none}
+.sc{position:absolute;left:0;right:0;top:0;padding:calc(var(--u)*16) calc(var(--u)*4) calc(var(--u)*8)}
+.hd{position:absolute;left:0;right:0;top:0;height:calc(var(--u)*13);display:flex;align-items:center;gap:calc(var(--u)*1.5);padding:0 calc(var(--u)*3);background:rgba(11,13,18,.96);border-bottom:1px solid var(--ln);z-index:5}
+.hd h1{font-size:1.1em;margin:0;flex:1;white-space:nowrap}
+.b{background:var(--cd);border:1px solid var(--ln);border-radius:calc(var(--u)*2);padding:calc(var(--u)*1.6) calc(var(--u)*2.6);font-size:.85em;color:var(--fg);white-space:nowrap}
+.b.hv{background:var(--ac);color:#04201c;border-color:var(--ac)}
+.tm{font-size:.8em;color:var(--mu)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:calc(var(--u)*3)}
+.ap{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*1.5);padding:calc(var(--u)*2);border-radius:calc(var(--u)*2.5);position:relative}
+.ap.hv{background:rgba(94,234,212,.18);outline:2px solid var(--ac)}
+.ic{width:calc(var(--u)*13);height:calc(var(--u)*13);border-radius:calc(var(--u)*3.5);display:grid;place-items:center;font-size:calc(var(--u)*6.5);font-weight:700;color:#fff}
+.nm{font-size:.75em;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.x{position:absolute;top:0;right:0;background:#b91c1c;border-radius:99px;width:calc(var(--u)*5.5);height:calc(var(--u)*5.5);display:grid;place-items:center;font-size:.8em}
+.x.hv{background:#ef4444;outline:2px solid #fff}
+.ts{position:absolute;top:calc(var(--u)*15);left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);padding:calc(var(--u)*1.5) calc(var(--u)*3);border-radius:calc(var(--u)*3);font-size:.8em;text-align:center;width:max-content;max-width:90%;z-index:6}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="eye" id="L"><div class="ui"></div><div class="cur"></div></div>
+  <div class="eye" id="R"><div class="ui"></div><div class="cur"></div></div>
+</div>
+<div id="ub" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;cursor:auto">
+ <div style="background:#161a23;border:1px solid #262c3a;border-radius:12px;padding:16px;width:min(90%,560px);display:flex;flex-direction:column;gap:10px;font-size:15px">
+  <b>Tambah aplikasi</b>
+  <input id="ubn" placeholder="Nama (mis. Netflix)" style="font-size:16px;padding:10px;border-radius:8px;border:1px solid #262c3a;background:#0b0d12;color:#e8ecf4">
+  <input id="ubl" placeholder="Link/deep link (mis. spotify:) atau nama paket" style="font-size:16px;padding:10px;border-radius:8px;border:1px solid #262c3a;background:#0b0d12;color:#e8ecf4">
+  <small style="color:#8b93a7">Deep link (mis. <code>spotify:</code>, <code>https://…</code>, <code>intent://…</code>) paling andal. Nama paket (mis. <code>com.netflix.mediaclient</code>) hanya berhasil kalau aplikasinya mengizinkan dibuka dari browser.</small>
+  <div style="display:flex;gap:8px;justify-content:space-between"><button id="ubr" style="padding:8px 14px">Reset daftar</button><span><button id="ubx" style="padding:8px 14px">Batal</button> <button id="ubo" style="padding:8px 14px">Tambah</button></span></div>
+ </div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const L=$('#L'),R=$('#R'),stage=$('#stage');
+const ui=[L,R].map(e=>e.querySelector('.ui')),cu=[L,R].map(e=>e.querySelector('.cur'));
+const now=()=>performance.now();
+const DEF=[
+ {n:'YouTube',u:'intent://www.youtube.com/#Intent;scheme=https;package=com.google.android.youtube;end'},
+ {n:'Spotify',u:'spotify:'},
+ {n:'WhatsApp',u:'intent://send/#Intent;scheme=whatsapp;package=com.whatsapp;end'},
+ {n:'Telegram',u:'intent://resolve/#Intent;scheme=tg;package=org.telegram.messenger;end'},
+ {n:'Instagram',u:'intent://instagram.com/#Intent;scheme=https;package=com.instagram.android;end'},
+ {n:'Peta',u:'geo:0,0?q='},
+ {n:'Video VR',u:'https://claude.ai/artifact/3NByeFmJVbrqXrG4P4Fvox'}
+];
+let apps=null;try{apps=JSON.parse(localStorage.getItem('vrl-apps'))}catch(e){}
+if(!Array.isArray(apps))apps=DEF.map(x=>({...x}));
+const S={hover:'',mx:.5,my:.5,scroll:0,edit:0,ipd:0,hd:1,msg:'',msgT:0};
+try{const o=JSON.parse(localStorage.getItem('vrl-ipd'));if(typeof o==='number')S.ipd=o}catch(e){}
+const save=()=>{try{localStorage.setItem('vrl-apps',JSON.stringify(apps));localStorage.setItem('vrl-ipd',JSON.stringify(S.ipd))}catch(e){}};
+const toast=t=>{S.msg=t;S.msgT=now()+3000};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hue=n=>{let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))%360;return h};
+const A=(a,i='')=>`data-a="${a}" data-i="${i}"`;
+const cls=(a,i,b)=>b+(S.hover===a+'|'+i?' hv':'');
+const B=(a,t,i='')=>`<span ${A(a,i)} class="${cls(a,i,'b')}">${t}</span>`;
+
+function launch(u){
+  toast('Membuka…');
+  if(/^[a-z][a-z0-9+.-]*:/i.test(u)) location.href=u;
+  else location.href='intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package='+u+';end';
+}
+function fs(){try{const d=document,e=d.documentElement;if(d.fullscreenElement||d.webkitFullscreenElement){(d.exitFullscreen||d.webkitExitFullscreen).call(d)}else{(e.requestFullscreen||e.webkitRequestFullscreen).call(e);try{screen.orientation.lock('landscape').catch(()=>{})}catch(x){}}}catch(e){}}
+function act(h){if(!h)return;const a=h.a,i=+h.id;
+ if(a==='open')launch(apps[i].u);
+ else if(a==='del'){apps.splice(i,1);save()}
+ else if(a==='edit')S.edit=S.edit?0:1;
+ else if(a==='add'){$('#ub').style.display='flex';setTimeout(()=>$('#ubn').focus(),50)}
+ else if(a==='ip'){S.ipd=Math.min(30,S.ipd+1);save()}
+ else if(a==='im'){S.ipd=Math.max(-30,S.ipd-1);save()}
+ else if(a==='fs')fs()}
+
+function view(){
+ const t=apps.map((a,i)=>`<div ${A('open',i)} class="${cls('open',i,'ap')}"><div class="ic" style="background:hsl(${hue(a.n)} 55% 40%)">${esc([...a.n][0]||'?')}</div><div class="nm">${esc(a.n)}</div>${S.edit?`<span ${A('del',i)} class="${cls('del',i,'x')}">✕</span>`:''}</div>`).join('');
+ return `<div class="sc" style="transform:translateY(${-S.scroll}px)"><div class="grid">${t}</div></div><div class="hd"><h1>🥽 VR SBS</h1>${B('add','+ App')}${B('edit',S.edit?'Selesai':'✎ Ubah')}${B('im','−')}<span class="tm">Jarak</span>${B('ip','+')}${B('fs','⛶')}</div>${S.msgT>now()?`<div class="ts">${esc(S.msg)}</div>`:''}`}
+const sh=i=>`translateX(${(i?1:-1)*S.ipd*L.clientHeight/100}px)`;
+let lastH='';
+function render(){const h=view();if(h!==lastH){lastH=h;ui[0].innerHTML=h;ui[1].innerHTML=h}
+ const px=S.mx*100+'%',py=S.my*100+'%';
+ cu.forEach((c,i)=>{c.style.left=px;c.style.top=py;c.style.transform=sh(i)});ui.forEach((u,i)=>{u.style.transform=sh(i)})}
+
+function setM(e){const r=stage.getBoundingClientRect();let x=(e.clientX-r.left)/r.width*2;if(x>=1)x-=1;S.mx=Math.min(1,Math.max(0,x));S.my=Math.min(1,Math.max(0,(e.clientY-r.top)/r.height));S.hd=1}
+function hit(){const r=L.getBoundingClientRect(),x=S.mx*r.width,y=S.my*r.height,els=[...ui[0].querySelectorAll('[data-a]')];
+ for(let i=els.length-1;i>=0;i--){const b=els[i].getBoundingClientRect(),bx=b.left-r.left+S.ipd*L.clientHeight/100,by=b.top-r.top;
+  if(x>=bx&&x<=bx+b.width&&y>=by&&y<=by+b.height)return{a:els[i].dataset.a,id:els[i].dataset.i}}return null}
+function hov(){const h=hit();S.hover=h?h.a+'|'+h.id:''}
+addEventListener('pointermove',setM);
+addEventListener('click',e=>{setM(e);render();act(hit());S.hd=1});
+addEventListener('wheel',e=>{const sc=ui[0].querySelector('.sc'),max=Math.max(0,sc.offsetHeight-L.clientHeight);S.scroll=Math.min(max,Math.max(0,S.scroll+e.deltaY));S.hd=1},{passive:true});
+
+const ub=$('#ub');
+['click','pointermove','wheel'].forEach(n=>ub.addEventListener(n,e=>e.stopPropagation()));
+$('#ubx').onclick=()=>{ub.style.display='none'};
+$('#ubr').onclick=()=>{apps=DEF.map(x=>({...x}));save();ub.style.display='none';toast('Daftar direset')};
+$('#ubo').onclick=()=>{const n=$('#ubn').value.trim(),u=$('#ubl').value.trim();if(!n||!u){(n?$('#ubl'):$('#ubn')).focus();return}
+ apps.push({n,u});save();$('#ubn').value='';$('#ubl').value='';ub.style.display='none';toast('Ditambahkan: '+n)};
+
+function sizeU(){stage.style.setProperty('--u',L.clientHeight/100+'px')}
+addEventListener('resize',sizeU);document.addEventListener('fullscreenchange',()=>setTimeout(sizeU,100));
+function frame(){requestAnimationFrame(frame);render();if(S.hd){S.hd=0;hov();render()}}
+sizeU();frame();
+</script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>VR SBS Player</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{color-scheme:dark;--bg:#0b0d12;--fg:#e8ecf4;--mu:#8b93a7;--cd:#161a23;--ac:#5eead4;--ln:#262c3a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0;background:#000;color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;cursor:none;user-select:none;-webkit-user-select:none}
+body{display:flex;align-items:center;justify-content:center}
+#stage{display:grid;grid-template-columns:1fr 1fr;aspect-ratio:2712/1220;width:min(100%,calc(100vh*2.2229));width:min(100%,calc(100dvh*2.2229));max-height:100%;position:relative}
+.eye{min-width:0;position:relative;overflow:hidden;background:var(--bg)}
+#stage::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:#000;z-index:100;pointer-events:none}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:none}
+.play canvas{display:block}
+.ui{position:absolute;inset:0;font-size:calc(var(--u)*4)}
+.cur{position:absolute;z-index:99;width:calc(var(--u)*3);height:calc(var(--u)*3);margin:calc(var(--u)*-1.5) 0 0 calc(var(--u)*-1.5);border-radius:50%;border:2px solid #fff;background:rgba(94,234,212,.55);box-shadow:0 0 0 1px #000;pointer-events:none}
+.sc{position:absolute;left:0;right:0;top:0;padding:calc(var(--u)*16) calc(var(--u)*4) calc(var(--u)*8)}
+.hd{position:absolute;left:0;right:0;top:0;height:calc(var(--u)*13);display:flex;align-items:center;gap:calc(var(--u)*1.5);padding:0 calc(var(--u)*3);background:rgba(11,13,18,.96);border-bottom:1px solid var(--ln);z-index:5}
+.hd h1{font-size:1.1em;margin:0;flex:1;white-space:nowrap}
+.b{background:var(--cd);border:1px solid var(--ln);border-radius:calc(var(--u)*2);padding:calc(var(--u)*1.6) calc(var(--u)*2.6);font-size:.85em;color:var(--fg);white-space:nowrap}
+.b.hv{background:var(--ac);color:#04201c;border-color:var(--ac)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--u)*3)}
+.card{background:var(--cd);border:1px solid var(--ln);border-radius:calc(var(--u)*2);overflow:hidden}
+.th{aspect-ratio:16/9;background:#222 center/cover no-repeat;position:relative}
+.th.hv{outline:3px solid var(--ac);outline-offset:-3px}
+.pl{position:absolute;inset:0;display:grid;place-items:center;font-size:2.4em;color:#fff;text-shadow:0 0 8px #000}
+.ct{padding:calc(var(--u)*1.6) calc(var(--u)*2);font-size:.8em;display:flex;gap:calc(var(--u)*1.5);align-items:center}
+.nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.em{color:var(--mu);text-align:center;line-height:1.6;margin-top:calc(var(--u)*10);font-size:.85em}
+.tt{position:absolute;top:0;left:0;right:0;padding:calc(var(--u)*3);text-align:center;font-size:.85em;background:linear-gradient(rgba(0,0,0,.8),transparent)}
+.ts{position:absolute;top:calc(var(--u)*12);left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);padding:calc(var(--u)*1.5) calc(var(--u)*3);border-radius:calc(var(--u)*3);font-size:.8em;text-align:center;width:max-content;max-width:90%}
+.ctl{position:absolute;left:0;right:0;bottom:0;padding:calc(var(--u)*3);background:linear-gradient(transparent,rgba(0,0,0,.88));display:flex;flex-direction:column;gap:calc(var(--u)*1.5)}
+.skw{padding:calc(var(--u)*1.5) 0}
+.skw.hv .sk{outline:2px solid var(--ac)}
+.sk{height:calc(var(--u)*2.4);background:rgba(255,255,255,.25);border-radius:99px;position:relative;overflow:hidden}
+.sk i{position:absolute;left:0;top:0;bottom:0;background:var(--ac)}
+.row{display:flex;flex-wrap:wrap;gap:calc(var(--u)*1.5);align-items:center;justify-content:center}
+.tm{font-variant-numeric:tabular-nums;font-size:.8em;color:var(--mu)}
+.pn{position:absolute;left:0;right:0;bottom:0;padding:calc(var(--u)*3);background:rgba(11,13,18,.88);display:flex;flex-direction:column;gap:calc(var(--u)*1.5);z-index:6;border-top:1px solid var(--ln)}
+.lb{display:flex;justify-content:space-between;font-size:.85em}
+.sx{display:flex;align-items:center;gap:calc(var(--u)*2)}
+.f1{flex:1}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="eye" id="L"><canvas></canvas><div class="ui"></div><div class="cur"></div></div>
+  <div class="eye" id="R"><canvas></canvas><div class="ui"></div><div class="cur"></div></div>
+</div>
+<video id="v" playsinline style="display:none"></video>
+<div id="ub" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;cursor:auto"><div style="background:#161a23;border:1px solid #262c3a;border-radius:12px;padding:16px;width:min(90%,560px);display:flex;flex-direction:column;gap:10px;font-size:15px"><b>Tambah video dari link</b><input id="ubi" type="url" placeholder="https://…/video.mp4" style="font-size:16px;padding:10px;border-radius:8px;border:1px solid #262c3a;background:#0b0d12;color:#e8ecf4"><small style="color:#8b93a7">Harus link langsung ke file (.mp4/.webm) dan servernya mengizinkan CORS. Link YouTube tidak bisa.</small><div style="display:flex;gap:8px;justify-content:flex-end"><button id="ubx" style="padding:8px 14px">Batal</button><button id="ubo" style="padding:8px 14px">Tambah</button></div></div></div>
+<input id="fi" type="file" accept="video/*" multiple style="position:fixed;left:-9999px;top:0;opacity:0">
+<script>
+const $=s=>document.querySelector(s);
+const L=$('#L'),R=$('#R'),V=$('#v'),stage=$('#stage'),fi=$('#fi');
+const cv=[L,R].map(e=>e.querySelector('canvas')),ui=[L,R].map(e=>e.querySelector('.ui')),cu=[L,R].map(e=>e.querySelector('.cur'));
+/* WebGL: dipakai agar distorsi lensa (kelengkungan) bisa dihitung per piksel */
+const VS='attribute vec2 p;varying vec2 q;void main(){q=p;gl_Position=vec4(p,0.,1.);}';
+const FS='precision mediump float;varying vec2 q;uniform sampler2D t;uniform vec2 res;uniform vec4 src;uniform vec4 dst;uniform float k;void main(){vec2 px=vec2((q.x*.5+.5)*res.x,(1.-(q.y*.5+.5))*res.y);vec2 c=res*.5;float s=res.y*.5;vec2 d=(px-c)/s;float r2=dot(d,d);vec2 m=c+d*(1.+k*r2)*s;vec2 u=(m-dst.xy)/dst.zw;if(u.x<0.||u.x>1.||u.y<0.||u.y>1.){gl_FragColor=vec4(0.,0.,0.,1.);return;}gl_FragColor=texture2D(t,src.xy+u*src.zw);}';
+const gls=cv.map(c=>{const g=c.getContext('webgl',{alpha:false,antialias:false});if(!g)return null;
+ const mk=(t,s)=>{const o=g.createShader(t);g.shaderSource(o,s);g.compileShader(o);return o};
+ const pr=g.createProgram();g.attachShader(pr,mk(g.VERTEX_SHADER,VS));g.attachShader(pr,mk(g.FRAGMENT_SHADER,FS));g.linkProgram(pr);g.useProgram(pr);
+ const bf=g.createBuffer();g.bindBuffer(g.ARRAY_BUFFER,bf);g.bufferData(g.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),g.STATIC_DRAW);
+ const l=g.getAttribLocation(pr,'p');g.enableVertexAttribArray(l);g.vertexAttribPointer(l,2,g.FLOAT,false,0,0);
+ g.bindTexture(g.TEXTURE_2D,g.createTexture());
+ [[g.TEXTURE_MIN_FILTER,g.LINEAR],[g.TEXTURE_MAG_FILTER,g.LINEAR],[g.TEXTURE_WRAP_S,g.CLAMP_TO_EDGE],[g.TEXTURE_WRAP_T,g.CLAMP_TO_EDGE]].forEach(([n,v])=>g.texParameteri(g.TEXTURE_2D,n,v));
+ const u=n=>g.getUniformLocation(pr,n);return{g,res:u('res'),src:u('src'),dst:u('dst'),k:u('k')}});
+const S={view:'lib',items:[],scroll:0,cur:null,pm:'sbs',hover:'',mx:.5,my:.5,last:0,msg:'',msgT:0,ipd:0,zoom:1,k:0,set:0,vol:1,del:null,hd:1,lt:-1};
+/* ---------- pengaturan: jarak, kelengkungan, zoom ---------- */
+const CFG={ipd:{min:-30,max:30,step:1,lab:'Jarak antar mata',fmt:v=>(v>0?'+':'')+v},k:{min:0,max:.8,step:.02,lab:'Kelengkungan',fmt:v=>Math.round(v*100)+'%'},zoom:{min:.5,max:2,step:.05,lab:'Zoom',fmt:v=>Math.round(v*100)+'%'}};
+try{const o=JSON.parse(localStorage.getItem('vrsbs-set')||'{}');['ipd','k','zoom'].forEach(n=>{if(typeof o[n]==='number')S[n]=o[n]})}catch(e){}
+const persist=()=>{try{localStorage.setItem('vrsbs-set',JSON.stringify({ipd:S.ipd,k:S.k,zoom:S.zoom}))}catch(e){}};
+const setV=(n,v)=>{const c=CFG[n];S[n]=+Math.min(c.max,Math.max(c.min,v)).toFixed(3);persist()};
+const MODE={sbs:'3D SBS',swap:'3D tukar L/R','2d':'2D'};
+const now=()=>performance.now();
+const toast=t=>{S.msg=t;S.msgT=now()+2500};
+const fmt=s=>{s=Math.floor(s||0);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- penyimpanan (IndexedDB, opsional) ---------- */
+let db;
+const idb=()=>new Promise(res=>{try{const q=indexedDB.open('vrsbs',1);q.onupgradeneeded=()=>q.result.createObjectStore('v',{keyPath:'id'});q.onsuccess=()=>{db=q.result;res()};q.onerror=()=>res()}catch(e){res()}});
+const tx=(m,f)=>new Promise(res=>{if(!db)return res();try{const t=db.transaction('v',m);const r=f(t.objectStore('v'));t.oncomplete=()=>res(r&&r.result);t.onerror=()=>res()}catch(e){res()}});
+const save=it=>tx('readwrite',s=>s.put({id:it.id,name:it.name,mode:it.mode,thumb:it.thumb,blob:it.blob,url:it.remote?it.url:undefined}));
+
+/* ---------- pustaka ---------- */
+function thumb(it){return new Promise(res=>{const v=document.createElement('video');v.muted=true;if(it.remote)v.crossOrigin='anonymous';v.preload='auto';v.playsInline=true;let done=false;
+ const fin=()=>{if(!done){done=true;v.removeAttribute('src');v.load();res()}};setTimeout(fin,6000);v.onerror=fin;
+ v.onloadedmetadata=()=>{v.currentTime=Math.min(1,(v.duration||2)/2)};
+ v.onseeked=()=>{try{const c=document.createElement('canvas');c.width=320;c.height=180;const w=v.videoWidth,h=v.videoHeight,sb=it.mode!=='2d';c.getContext('2d').drawImage(v,0,0,sb?w/2:w,h,0,0,320,180);it.thumb=c.toDataURL('image/jpeg',.6)}catch(e){}fin()};
+ v.src=it.url})}
+const guess=n=>/sbs|3d|lr|\bou\b/i.test(n)?'sbs':'2d';
+function addFiles(fs){[...fs].forEach((f,i)=>{const it={id:Date.now()*1000+i,name:f.name.replace(/\.[^.]+$/,''),mode:guess(f.name),url:URL.createObjectURL(f),blob:f,thumb:''};S.items.push(it);save(it);thumb(it).then(()=>save(it))})}
+function addUrl(u){let n='Video URL';try{n=decodeURIComponent(u.split('?')[0].split('/').pop())||n}catch(e){}const it={id:Date.now()*1000,name:n.replace(/\.[^.]+$/,''),mode:guess(n),url:u,remote:1,thumb:''};S.items.push(it);save(it);thumb(it).then(()=>save(it))}
+fi.onchange=()=>{addFiles(fi.files);fi.value=''};
+
+/* ---------- pemutar ---------- */
+function open(id){const it=S.items.find(x=>x.id==id);if(!it)return;S.cur=it;S.pm=it.mode==='2d'?'2d':'sbs';V.crossOrigin=it.remote?'anonymous':null;V.src=it.url;V.volume=S.vol;
+ V.play().catch(()=>toast('Klik layar untuk memutar'));S.view='play';L.classList.add('play');R.classList.add('play');S.last=now()}
+function back(){V.pause();S.view='lib';L.classList.remove('play');R.classList.remove('play');S.hd=1}
+function seekBy(d){if(V.duration)V.currentTime=Math.max(0,Math.min(V.duration,V.currentTime+d))}
+function pp(){V.paused?V.play():V.pause()}
+function fs(){try{const d=document,e=d.documentElement;if(d.fullscreenElement||d.webkitFullscreenElement){(d.exitFullscreen||d.webkitExitFullscreen).call(d)}else{(e.requestFullscreen||e.webkitRequestFullscreen).call(e);try{screen.orientation.lock('landscape').catch(()=>{})}catch(x){}}}catch(e){}}
+function act(h){if(!h){if(S.view==='play')pp();return}
+ const a=h.a,id=h.id;
+ if(a!=='del')S.del=null;
+ switch(a){
+  case'add':try{fi.click()}catch(e){}toast('Membuka pemilih file… jika tidak muncul, buka halaman ini di Chrome/Safari');S.msgT=now()+6000;break;
+  case'url':{$('#ub').style.display='flex';setTimeout(()=>$('#ubi').focus(),50);break}
+  case'fs':fs();break;
+  case'play':open(id);break;
+  case'mode':{const it=S.items.find(x=>x.id==id);it.mode=it.mode==='2d'?'sbs':'2d';save(it);thumb(it).then(()=>save(it));break}
+  case'del':if(S.del==id){const i=S.items.findIndex(x=>x.id==id);if(i>=0){tx('readwrite',s=>s.delete(S.items[i].id));S.items.splice(i,1)}S.del=null}else S.del=id;break;
+  case'set':S.set=S.set?0:1;break;
+  case'none':break;
+  case'sl':{const c=CFG[id];setV(id,c.min+h.fx*(c.max-c.min));break}
+  case'stp':{const[n,d]=id.split(':');setV(n,S[n]+(+d)*CFG[n].step);break}
+  case'rst':S.ipd=0;S.k=0;S.zoom=1;persist();break;
+  case'back':back();break;
+  case'pp':pp();break;
+  case'b10':seekBy(-10);break;
+  case'f10':seekBy(10);break;
+  case'seek':if(V.duration)V.currentTime=h.fx*V.duration;break;
+  case'pmode':{const o=['sbs','swap','2d'];S.pm=o[(o.indexOf(S.pm)+1)%3];S.cur.mode=S.pm==='2d'?'2d':'sbs';save(S.cur);break}
+  case'zin':S.zoom=Math.min(2,+(S.zoom+.1).toFixed(2));break;
+  case'zout':S.zoom=Math.max(.5,+(S.zoom-.1).toFixed(2));break;
+  case'ip':S.ipd=Math.min(30,S.ipd+1);break;
+  case'im':S.ipd=Math.max(-30,S.ipd-1);break;
+  case'vp':S.vol=Math.min(1,+(S.vol+.1).toFixed(2));V.volume=S.vol;break;
+  case'vm':S.vol=Math.max(0,+(S.vol-.1).toFixed(2));V.volume=S.vol;break;
+ }}
+
+/* ---------- gambar video ke dua mata ---------- */
+function draw(){const vw=V.videoWidth,vh=V.videoHeight;if(!vw)return;
+ const dpr=Math.min(devicePixelRatio||1,3),m=S.pm,sb=m!=='2d';
+ let a=sb?(vw/2)/vh:vw/vh;if(sb&&a<1.2)a=16/9; /* half-SBS ditarik ke 16:9 */
+ for(let i=0;i<2;i++){const o=gls[i];if(!o)continue;const g=o.g,c=cv[i],w=Math.round(c.clientWidth*dpr),h=Math.round(c.clientHeight*dpr);
+  if(c.width!==w||c.height!==h){c.width=w;c.height=h}
+  g.viewport(0,0,w,h);
+  try{g.texImage2D(g.TEXTURE_2D,0,g.RGBA,g.RGBA,g.UNSIGNED_BYTE,V)}catch(e){if(!S.gle){S.gle=1;toast('Server video URL harus mengizinkan CORS')}return}
+  const dw=Math.min(w,h*a)*S.zoom,dh=dw/a,dx=(w-dw)/2+(i?1:-1)*S.ipd*h/100,dy=(h-dh)/2;
+  let sx=0,sw=1;if(sb){sw=.5;sx=((i===1)!==(m==='swap'))?.5:0}
+  g.uniform2f(o.res,w,h);g.uniform4f(o.src,sx,0,sw,1);g.uniform4f(o.dst,dx,dy,dw,dh);g.uniform1f(o.k,S.k);
+  g.drawArrays(g.TRIANGLE_STRIP,0,4)}}
+
+/* ---------- UI (dirender identik di kedua mata) ---------- */
+const A=(a,i='')=>`data-a="${a}" data-i="${i}"`;
+const cls=(a,i,b)=>b+(S.hover===a+'|'+i?' hv':'');
+const B=(a,t,i='')=>`<span ${A(a,i)} class="${cls(a,i,'b')}">${t}</span>`;
+function lib(){
+ const cards=S.items.map(it=>`<div class="card"><div ${A('play',it.id)} class="${cls('play',it.id,'th')}" style="${it.thumb?`background-image:url(${it.thumb})`:''}"><span class="pl">▶</span></div><div class="ct"><span class="nm">${esc(it.name)}</span></div><div class="ct">${B('mode',it.mode==='2d'?'2D':'3D SBS',it.id)}${B('del',S.del==it.id?'Yakin?':'Hapus',it.id)}</div></div>`).join('');
+ return `<div class="sc" style="transform:translateY(${-S.scroll}px)">${S.items.length?`<div class="grid">${cards}</div>`:'<p class="em">Pustaka masih kosong.<br>Klik “+ Video” untuk memilih file,<br>atau “URL” untuk tautan video.<br><br>Mouse: gerakkan kursor, klik untuk memilih, roda untuk menggulir.</p>'}</div><div class="hd"><h1>🥽 VR SBS</h1>${B('add','+ Video')}${B('url','URL')}${B('set','⚙')}${B('fs','⛶')}</div>${S.msgT>now()?`<div class="ts">${esc(S.msg)}</div>`:''}`}
+function play(){
+ const d=V.duration||0,t=V.currentTime||0,show=(S.last+3000>now()||V.paused)&&!S.set;let h='';
+ if(S.msgT>now())h+=`<div class="ts">${esc(S.msg)}</div>`;
+ if(show)h+=`<div class="tt">${esc(S.cur.name)}</div><div class="ctl"><div ${A('seek')} class="${cls('seek','','skw')}"><div class="sk"><i style="width:${d?(t/d*100).toFixed(1):0}%"></i></div></div><div class="row">${B('back','← Pustaka')}${B('b10','⏪ 10')}${B('pp',V.paused?'▶':'⏸')}${B('f10','10 ⏩')}<span class="tm">${fmt(t)} / ${fmt(d)}</span></div><div class="row">${B('pmode',MODE[S.pm])}${B('set','⚙ Atur')}<span class="tm">Vol</span>${B('vm','−')}${B('vp','+')}${B('fs','⛶')}</div></div>`;
+ return h}
+const sh=i=>`translateX(${(i?1:-1)*S.ipd*L.clientHeight/100}px)`;
+function setp(){return `<div ${A('none')} class="pn"><div class="lb"><b>Pengaturan VR</b><span class="tm">${Math.round(L.clientWidth*(devicePixelRatio||1))}×${Math.round(L.clientHeight*(devicePixelRatio||1))} per mata</span></div>${['ipd','k','zoom'].map(n=>{const c=CFG[n];return `<div><div class="lb"><span>${c.lab}</span><span class="tm">${c.fmt(S[n])}</span></div><div class="sx">${B('stp','&nbsp;−&nbsp;',n+':-1')}<div ${A('sl',n)} class="${cls('sl',n,'skw')} f1"><div class="sk"><i style="width:${((S[n]-c.min)/(c.max-c.min)*100).toFixed(1)}%"></i></div></div>${B('stp','&nbsp;+&nbsp;',n+':1')}</div></div>`}).join('')}<div class="row">${B('rst','Reset')}${B('set','Selesai')}</div></div>`}
+let lastH='';
+function render(){const h=(S.view==='lib'?lib():play())+(S.set?setp():'');
+ if(h!==lastH){lastH=h;ui[0].innerHTML=h;ui[1].innerHTML=h}
+ const px=S.mx*100+'%',py=S.my*100+'%';cu.forEach((c,i)=>{c.style.left=px;c.style.top=py;c.style.transform=sh(i)});ui.forEach((u,i)=>{u.style.transform=sh(i)})}
+
+/* ---------- mouse ---------- */
+function setM(e){const r=stage.getBoundingClientRect();let x=(e.clientX-r.left)/r.width*2;if(x>=1)x-=1;S.mx=Math.min(1,Math.max(0,x));S.my=Math.min(1,Math.max(0,(e.clientY-r.top)/r.height));S.last=now();S.hd=1}
+function hit(){const r=L.getBoundingClientRect(),x=S.mx*r.width,y=S.my*r.height,els=[...ui[0].querySelectorAll('[data-a]')];
+ for(let i=els.length-1;i>=0;i--){const b=els[i].getBoundingClientRect(),bx=b.left-r.left+S.ipd*L.clientHeight/100,by=b.top-r.top;
+  if(x>=bx&&x<=bx+b.width&&y>=by&&y<=by+b.height)return{a:els[i].dataset.a,id:els[i].dataset.i,fx:(x-bx)/b.width}}return null}
+function hov(){const h=hit();S.hover=h?h.a+'|'+h.id:''}
+addEventListener('pointermove',e=>setM(e));
+addEventListener('click',e=>{setM(e);render();act(hit());S.hd=1});
+addEventListener('wheel',e=>{if(S.view==='lib'){const sc=ui[0].querySelector('.sc'),max=Math.max(0,sc.offsetHeight-L.clientHeight);S.scroll=Math.min(max,Math.max(0,S.scroll+e.deltaY))}
+ else{S.vol=Math.min(1,Math.max(0,+(S.vol-Math.sign(e.deltaY)*.05).toFixed(2)));V.volume=S.vol;toast('Volume '+Math.round(S.vol*100)+'%')}S.last=now();S.hd=1},{passive:true});
+addEventListener('keydown',e=>{if(S.view!=='play'&&e.key!=='f')return;
+ if(e.key===' '){e.preventDefault();pp()}else if(e.key==='ArrowLeft')seekBy(-10);else if(e.key==='ArrowRight')seekBy(10);else if(e.key==='Escape')back();else if(e.key==='f')fs();S.last=now()});
+V.onerror=()=>toast('Video gagal diputar');
+{const ub=$('#ub');['click','pointermove','wheel','keydown'].forEach(n=>ub.addEventListener(n,e=>e.stopPropagation()));
+ $('#ubx').onclick=()=>{ub.style.display='none'};
+ $('#ubo').onclick=()=>{const u=$('#ubi').value.trim();if(/^https?:\/\//i.test(u)){addUrl(u);$('#ubi').value='';ub.style.display='none';toast('Link ditambahkan')}else $('#ubi').focus()};
+ $('#ubi').onkeydown=e=>{if(e.key==='Enter')$('#ubo').click()}}
+V.onended=()=>{S.last=now()};
+addEventListener('dragover',e=>e.preventDefault());addEventListener('drop',e=>{e.preventDefault();addFiles(e.dataTransfer.files)});
+
+/* ---------- loop ---------- */
+function sizeU(){stage.style.setProperty('--u',L.clientHeight/100+'px')}
+addEventListener('resize',sizeU);document.addEventListener('fullscreenchange',()=>setTimeout(sizeU,100));
+function frame(){requestAnimationFrame(frame);
+ if(S.view==='play'&&V.readyState>=2)draw();
+ render();if(S.hd){S.hd=0;hov();render()}}
+idb().then(()=>tx('readonly',s=>s.getAll())).then(all=>{
+ (all||[]).sort((a,b)=>a.id-b.id).forEach(r=>S.items.push({id:r.id,name:r.name,mode:r.mode,thumb:r.thumb||'',blob:r.blob,remote:!!r.url,url:r.url||URL.createObjectURL(r.blob)}))});
+sizeU();frame();
+</script>
+</body>
+</html>
